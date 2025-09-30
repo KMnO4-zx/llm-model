@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 # save as: download_longcat_meta.sh
 set -e
-REPO="meituan-longcat/LongCat-Flash-Chat"
+
+# 提示用户输入REPO名称
+echo "请输入要下载的仓库路径 (例如: deepseek-ai/DeepSeek-V3.2-Exp):"
+read -r REPO
+
+# 验证输入是否为空
+if [ -z "$REPO" ]; then
+    echo "错误: 仓库名称不能为空"
+    exit 1
+fi
+
 DIR="${REPO#*/}"
 
 # 国内镜像加速，如需请取消下一行注释
