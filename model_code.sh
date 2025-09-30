@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # save as: download_longcat_meta.sh
 set -e
-REPO="deepseek-ai/DeepSeek-V3.2-Exp"
+REPO="meituan-longcat/LongCat-Flash-Chat"
 DIR="${REPO#*/}"
 
 # 国内镜像加速，如需请取消下一行注释
