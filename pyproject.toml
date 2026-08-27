@@ -1,0 +1,7 @@
+[project]
+name = "llm-model"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "huggingface-hub[cli]>=1.28.0",
+]

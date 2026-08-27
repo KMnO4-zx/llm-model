@@ -13,6 +13,8 @@
 
 ### 运行下载脚本
 
+环境由 [uv](https://docs.astral.sh/uv/) 管理（依赖见 `pyproject.toml`，脚本运行时会自动 `uv sync`）：
+
 ```bash
 bash model_code.sh
 ```
