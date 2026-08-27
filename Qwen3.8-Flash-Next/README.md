@@ -16,7 +16,7 @@ pipeline_tag: image-text-to-text
 > [!Tip]
 > For users seeking managed, scalable inference without infrastructure maintenance, the official Qwen API service is provided by [Qwen Cloud](https://www.qwencloud.com).
 >
-> In particular, **Qwen3.8-Flash** is the official version based on Qwen3.8-Flash-Next with more production features, e.g., 1M context length by default, official built-in tools. For more information, please refer to the [Qwen3.8-Flash Overview](https://www.qwencloud.com/models/Qwen3.8-Flash).
+> In particular, **Qwen3.8-Flash** is the official version based on Qwen3.8-Flash-Next with more production features, e.g., 1M context length by default, official built-in tools. For more information, please refer to the [Qwen3.8-Flash Overview](https://www.qwencloud.com/models/qwen3.8-flash).
 
 
 As the frontier of foundation models pushes toward ever-larger parameter counts and ever-longer context windows, the question is no longer just how much we can scale, but how efficiently we can do so. Sustainable progress toward artificial general intelligence (AGI) that benefits everyone demands architectural innovation. Today, we are sharing a concrete step in that direction: Qwen3.8-Flash-Next. 
@@ -83,6 +83,13 @@ We are excited to embark on this next chapter with you and welcome your feedback
 .vl-table .metric-value{margin-top:2px;font-size:15px;line-height:1.15;color:#171717}
 .vl-table .metric-pair{white-space:nowrap}
 .vl-table .metric-sep{color:#9A9A9A;padding:0 3px}
+
+@media (prefers-color-scheme: dark){
+.vl-table th,.vl-table td[colspan]{color:#8DA2FF!important;border-bottom-color:#8DA2FF!important}
+.vl-table td[colspan]{background:rgba(10,46,254,0.22)!important}
+.vl-table .benchmark-capability,.vl-table .metric-value{color:#E8E8E8!important}
+.vl-table .benchmark-name,.vl-table .metric-label{color:#A3A3A3!important}
+}
 </style>
 
 ### Language

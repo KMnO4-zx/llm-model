@@ -1,0 +1,28 @@
+{
+  "vision_config": {
+    "min_pixels": 3136,
+    "max_pixels": 1016064,
+    "patch_size": 14,
+    "temporal_patch_size": 1,
+    "merge_size": 2,
+    "image_mean": [
+      0.48145466,
+      0.4578275,
+      0.40821073
+    ],
+    "image_std": [
+      0.26862954,
+      0.26130258,
+      0.27577711
+    ],
+    "image_processor_type": "Qwen2VLImageProcessor",
+    "processor_class": "Qwen2VLProcessor",
+    "pre_pixel_shuffle": true
+  },
+  "audio_config": {
+    "sampling_rate": 16000,
+    "audio_comp_start": "<|audio_comp_start|>",
+    "audio_comp_span": "<|audio_comp_pad|>",
+    "audio_comp_end": "<|audio_comp_end|>"
+  }
+}

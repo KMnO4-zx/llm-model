@@ -34,41 +34,72 @@ uv run hf download "$REPO" \
 
 # ---------- 模型代码回退 ----------
 # HF 仓库自带 .py（trust_remote_code 风格）时上面已经下载完；
-# 若没有（如 Qwen3.8-Flash-Next 依赖 transformers 内置实现），
-# 则按 config.json 的 model_type 去 transformers 主干拉对应模块。
-if ! compgen -G "$DIR/*.py" >/dev/null; then
+# 若没有，则按 config.json 的 model_type 去 transformers 拉对应模块：
+# 先试主干，未收录再试 README 里链接的 PR 分支（新模型常处于 review 中）。
+
+# 探测 URL 状态码；瞬时错误（限流 429 / 5xx）时重试，避免静默漏文件
+probe_url() {  # $1=url，stdout 输出 http code
+    local code i
+    for i in 1 2 3; do
+        code=$(curl -s -o /dev/null -w '%{http_code}' "$1")
+        case "$code" in 200|404) break ;; *) sleep $((i * 2)) ;; esac
+    done
+    echo "$code"
+}
+
+# 从 transformers 的指定 ref 下载 model_type 实现，成功返回 0
+fetch_tf_code() {  # $1 = ref（commit sha 或 pull/N/head）
+    local TF_REF=$1
+    local TF_BASE="https://raw.githubusercontent.com/huggingface/transformers/$TF_REF/src/transformers/models/$MODEL_TYPE"
+    if [ "$(probe_url "$TF_BASE/configuration_$MODEL_TYPE.py")" != "200" ]; then
+        return 1
+    fi
+    echo "🔍 HF 仓库不含模型代码，从 transformers@${TF_REF} 下载 ${MODEL_TYPE} 实现"
+    for f in \
+        __init__.py \
+        configuration_$MODEL_TYPE.py \
+        modeling_$MODEL_TYPE.py \
+        modular_$MODEL_TYPE.py \
+        processing_$MODEL_TYPE.py \
+        image_processing_$MODEL_TYPE.py \
+        image_processing_${MODEL_TYPE}_fast.py \
+        video_processing_$MODEL_TYPE.py \
+        tokenization_$MODEL_TYPE.py; do
+        code=$(probe_url "$TF_BASE/$f")
+        if [ "$code" = "200" ]; then
+            curl -sL -f -o "$DIR/$f" "$TF_BASE/$f" && echo "  ↓ $f"
+        fi
+    done
+    # modeling 是每个 transformers 模块的必备文件，缺失说明下载不完整
+    if [ ! -f "$DIR/modeling_$MODEL_TYPE.py" ]; then
+        echo "❌ modeling_${MODEL_TYPE}.py 缺失（探测或下载失败），请重跑脚本"
+        exit 1
+    fi
+    {
+        echo "# 代码来源"
+        echo
+        echo "HF 仓库 $REPO 本身不含 .py 文件，以下代码取自 transformers："
+        echo "- 来源: https://github.com/huggingface/transformers/tree/$TF_REF/src/transformers/models/$MODEL_TYPE"
+        echo "- 拉取日期: $(date +%F), ref $TF_REF"
+    } > "$DIR/SOURCE.md"
+    return 0
+}
+
+# SOURCE.md 存在说明代码来自 transformers（而非 HF 仓库自带），重跑时重新拉取以补全
+if ! compgen -G "$DIR/*.py" >/dev/null || [ -f "$DIR/SOURCE.md" ]; then
     MODEL_TYPE=$(uv run python -c "import json;print(json.load(open('$DIR/config.json'))['model_type'])" 2>/dev/null || true)
     if [ -z "$MODEL_TYPE" ]; then
         echo "⚠️  HF 仓库不含 .py，且 config.json 中无 model_type，跳过代码回退"
     else
         TF_SHA=$(git ls-remote https://github.com/huggingface/transformers.git refs/heads/main | cut -f1)
-        TF_BASE="https://raw.githubusercontent.com/huggingface/transformers/$TF_SHA/src/transformers/models/$MODEL_TYPE"
-        if [ "$(curl -s -o /dev/null -w '%{http_code}' "$TF_BASE/configuration_$MODEL_TYPE.py")" = "200" ]; then
-            echo "🔍 HF 仓库不含模型代码，从 transformers@$TF_SHA 下载 $MODEL_TYPE 实现"
-            for f in \
-                __init__.py \
-                configuration_$MODEL_TYPE.py \
-                modeling_$MODEL_TYPE.py \
-                modular_$MODEL_TYPE.py \
-                processing_$MODEL_TYPE.py \
-                image_processing_$MODEL_TYPE.py \
-                image_processing_${MODEL_TYPE}_fast.py \
-                video_processing_$MODEL_TYPE.py \
-                tokenization_$MODEL_TYPE.py; do
-                code=$(curl -s -o /dev/null -w '%{http_code}' "$TF_BASE/$f")
-                if [ "$code" = "200" ]; then
-                    curl -sL -f -o "$DIR/$f" "$TF_BASE/$f" && echo "  ↓ $f"
-                fi
-            done
-            {
-                echo "# 代码来源"
-                echo
-                echo "HF 仓库 $REPO 本身不含 .py 文件，以下代码取自 transformers 主干："
-                echo "- 来源: https://github.com/huggingface/transformers/tree/$TF_SHA/src/transformers/models/$MODEL_TYPE"
-                echo "- 拉取日期: $(date +%F), commit $TF_SHA"
-            } > "$DIR/SOURCE.md"
-        else
-            echo "⚠️  transformers 主干未收录 model_type=$MODEL_TYPE（可能尚未合入或需要自定义代码）"
+        if ! fetch_tf_code "$TF_SHA"; then
+            # 主干未收录：新模型的实现常在待 review 的 PR 里，README 往往会链接它
+            TF_PR=$(grep -ohE 'huggingface/transformers/pull/[0-9]+' "$DIR"/README*.md 2>/dev/null | head -1 | grep -oE '[0-9]+$')
+            if [ -n "$TF_PR" ] && fetch_tf_code "pull/$TF_PR/head"; then
+                :
+            else
+                echo "⚠️  transformers 主干未收录 model_type=${MODEL_TYPE}（可能尚未合入或需要自定义代码）"
+            fi
         fi
     fi
 fi
