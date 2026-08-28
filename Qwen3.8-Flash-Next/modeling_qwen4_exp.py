@@ -195,6 +195,7 @@ class Qwen4ExpTextRMSNormGated(nn.Module):
         variance = hidden_states.pow(2).mean(-1, keepdim=True)
         # Norm before gate
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+        #先归一化，再被门控缩放
         hidden_states = self.weight * hidden_states.to(input_dtype)
         hidden_states = hidden_states * ACT2FN[self.activation](gate.to(torch.float32))
 
